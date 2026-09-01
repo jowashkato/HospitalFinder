@@ -17,3 +17,6 @@ hospitalfinder/android/key.properties
 .idea/
 *.iml
 .DS_Store
+
+# resolved on each machine / CI
+hospitalfinder/pubspec.lock

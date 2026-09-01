@@ -130,7 +130,7 @@ class SupabaseService {
         services: services,
         specialties: specialties,
       );
-      return getHospitalById(hospitalId);
+      return await getHospitalById(hospitalId);
     } catch (e) {
       if (kDebugMode) {
         print('Error adding hospital: $e');

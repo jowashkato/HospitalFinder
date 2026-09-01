@@ -1,0 +1,19 @@
+# Flutter build output & tooling
+hospitalfinder/build/
+hospitalfinder/.dart_tool/
+hospitalfinder/.flutter-plugins
+hospitalfinder/.flutter-plugins-dependencies
+hospitalfinder/android/.gradle/
+hospitalfinder/android/local.properties
+hospitalfinder/ios/Pods/
+hospitalfinder/ios/.symlinks/
+
+# Release signing secrets
+hospitalfinder/android/key.properties
+**/*.jks
+**/*.keystore
+
+# IDE / OS
+.idea/
+*.iml
+.DS_Store

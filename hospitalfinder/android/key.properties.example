@@ -1,0 +1,13 @@
+# Copy this file to android/key.properties and fill in real values to sign
+# release builds with your own keystore. When this file is absent, release
+# builds fall back to the debug key (fine for testing / sideloading, NOT for
+# the Play Store).
+#
+# Generate a keystore first:
+#   keytool -genkey -v -keystore %USERPROFILE%\upload-keystore.jks \
+#     -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+
+storePassword=your_keystore_password
+keyPassword=your_key_password
+keyAlias=upload
+storeFile=C:/Users/jowas/upload-keystore.jks

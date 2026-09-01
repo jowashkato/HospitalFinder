@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HospitalFinder — Admin</title>
+<style>
+  /* Palette mirrors the Flutter app (lib/app_theme.dart) */
+  :root{
+    --bg:#f3f2f9; --surface:#ffffff; --surface-2:#fbfaff; --surface-3:#f5f3fd;
+    --border:#eceaf4; --border-2:#e3e0ef;
+    --text:#1b1830; --muted:#7b7791; --faint:#a8a4bc;
+    --primary:#6d3be4; --primary-dark:#5629c8; --primary-soft:#efeaff;
+    --grad:linear-gradient(118deg,#5a2ed6 0%,#7645ec 55%,#8b5cf6 100%);
+    --lav:#efeaff;
+    --green:#16a34a; --green-bg:#dcfce7; --green-ink:#15803d;
+    --red:#dc2626; --red-bg:#fef2f2; --red-border:#f3cccc;
+    --shadow:0 14px 34px -10px rgba(38,20,80,.18);
+    --shadow-sm:0 2px 8px rgba(38,20,80,.06);
+    --font:Roboto,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Cascadia Code",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;font-size:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit;font-size:13px}
+  a{color:var(--primary)}
+  code{background:var(--lav);color:var(--primary-dark);padding:1px 5px;border-radius:5px;font-family:var(--mono);font-size:11px}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#dcd8ec;border-radius:8px;border:2px solid transparent;background-clip:content-box}
+  ::-webkit-scrollbar-thumb:hover{background:#c8c2e0;background-clip:content-box}
+
+  /* ---------- buttons ---------- */
+  .btn{border:1px solid var(--border-2);background:var(--surface);color:var(--text);
+    padding:8px 14px;border-radius:10px;display:inline-flex;align-items:center;gap:6px;line-height:1;
+    font-weight:500;box-shadow:var(--shadow-sm);transition:border-color .12s,background .12s,color .12s}
+  .btn:hover{border-color:var(--primary);color:var(--primary)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600;
+    box-shadow:0 6px 16px -4px rgba(109,59,228,.5)}
+  .btn.primary:hover{background:var(--primary-dark);color:#fff}
+  .btn.danger{color:var(--red);border-color:var(--red-border)}
+  .btn.danger:hover{background:var(--red-bg)}
+  .btn.ghost{background:transparent;border-color:transparent;box-shadow:none;color:var(--muted)}
+  .btn.ghost:hover{background:var(--surface-2);color:var(--text)}
+  .btn.on-grad{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.32);color:#fff;box-shadow:none}
+  .btn.on-grad:hover{background:rgba(255,255,255,.26);color:#fff}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.sm{padding:6px 11px;font-size:12px;box-shadow:none}
+  .spacer{flex:1}
+
+  .icon-btn{width:30px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid var(--border-2);border-radius:8px;background:var(--surface);color:var(--muted);
+    box-shadow:none;transition:all .12s}
+  .icon-btn svg{width:15px;height:15px}
+  .icon-btn.edit:hover{color:var(--primary);border-color:var(--primary);background:var(--primary-soft)}
+  .icon-btn.del:hover{color:var(--red);border-color:var(--red-border);background:var(--red-bg)}
+
+  /* ---------- auth screens ---------- */
+  .center{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+  #login{position:relative;overflow:hidden;background:var(--grad)}
+  .login-scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+  .login-veil{position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(58% 48% at 50% 40%, rgba(18,6,42,.20), rgba(18,6,42,.58))}
+  #login .card{position:relative;z-index:2;box-shadow:0 40px 90px -24px rgba(10,3,32,.62)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:370px;
+    box-shadow:var(--shadow);overflow:hidden}
+  .card-head{background:var(--grad);color:#fff;padding:28px 28px 24px;text-align:center}
+  .card-head .head-icon{width:50px;height:50px;border-radius:16px;background:rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.32);display:flex;align-items:center;justify-content:center;
+    font-size:23px;margin:0 auto 13px}
+  .card-head h1{margin:0 0 3px;font-size:16px;font-weight:700}
+  .card-head p{margin:0;font-size:12px;color:rgba(255,255,255,.85)}
+  .card-body{padding:24px 26px 26px}
+  .card-body h1{margin:0 0 6px;font-size:16px}
+  .card-body label{display:block;margin:14px 0 6px;color:var(--muted);font-size:12px;font-weight:500}
+  .card-body label:first-child{margin-top:0}
+  .card-body input{width:100%;padding:11px 12px;background:var(--surface-2);border:1px solid var(--border-2);
+    border-radius:11px;color:var(--text)}
+  .card-body input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(109,59,228,.13)}
+  .card-body .btn.primary{width:100%;justify-content:center;margin-top:20px;padding:12px}
+  .card-body p.sub{color:var(--muted);font-size:12px;margin:0 0 16px;line-height:1.5}
+  .err{color:var(--red);font-size:12px;margin-top:12px;min-height:15px;white-space:pre-wrap}
+
+  /* ---------- app shell ---------- */
+  #app{display:none;flex-direction:column;height:100%}
+  .appbar{background:var(--grad);color:#fff;height:54px;flex:none;display:flex;align-items:center;gap:12px;
+    padding:0 16px 0 18px;box-shadow:0 4px 20px -2px rgba(90,46,214,.4);z-index:5}
+  .appbar-brand{font-weight:700;letter-spacing:.2px;display:flex;align-items:center;gap:9px;font-size:15px}
+  .appbar-brand .dot{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.22)}
+  .appbar-sub{font-weight:600;font-size:10px;letter-spacing:.4px;text-transform:uppercase;
+    background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);padding:3px 8px;border-radius:999px}
+  .appbar-avatar{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.2);
+    border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700}
+  .appbar-email{color:rgba(255,255,255,.9);font-size:12px}
+
+  .shell{flex:1;display:grid;grid-template-columns:236px 1fr;min-height:0}
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:10px;overflow:auto}
+  .side-label{padding:12px 12px 8px;color:var(--faint);font-size:10.5px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.7px}
+  .tbl-item{position:relative;display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;
+    color:var(--muted);cursor:pointer;user-select:none;font-weight:500;margin-bottom:2px;transition:background .12s,color .12s}
+  .tbl-item:hover{background:var(--surface-3);color:var(--text)}
+  .tbl-item.active{background:var(--lav);color:var(--primary);font-weight:600}
+  .tbl-item.active::before{content:"";position:absolute;left:-10px;top:8px;bottom:8px;width:3px;
+    border-radius:0 3px 3px 0;background:var(--primary)}
+  .tbl-item svg{width:16px;height:16px;flex:none}
+
+  .main{min-width:0;display:flex;flex-direction:column;min-height:0}
+  .topbar{display:flex;align-items:center;gap:10px;padding:16px 18px 12px;flex:none}
+  .topbar h2{margin:0;font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+  .topbar h2::before{content:"";width:8px;height:8px;border-radius:3px;background:var(--primary)}
+  .count{color:var(--muted);font-size:11.5px;font-weight:600;background:var(--surface-3);
+    border:1px solid var(--border);padding:3px 9px;border-radius:999px}
+  .search-box{position:relative}
+  .search-box svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--faint)}
+  .search{background:var(--surface);border:1px solid var(--border-2);border-radius:10px;padding:8px 12px 8px 32px;
+    color:var(--text);width:240px}
+  .search:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(109,59,228,.13)}
+
+  .grid-wrap{flex:1;overflow:auto;min-height:0;margin:0 18px 18px;background:var(--surface);
+    border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-sm)}
+  table.grid{border-collapse:separate;border-spacing:0;width:100%;font-size:12.5px}
+  table.grid th,table.grid td{border-bottom:1px solid var(--border);padding:11px 16px;text-align:left;
+    white-space:nowrap;max-width:420px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+  table.grid th{position:sticky;top:0;background:var(--surface-2);color:var(--muted);z-index:2;
+    border-bottom:1px solid var(--border-2)}
+  table.grid th .colname{font-weight:700;font-size:11px;letter-spacing:.3px;text-transform:lowercase}
+  table.grid th .coltype{display:block;color:var(--faint);font-weight:500;font-size:9.5px;margin-top:2px;
+    font-family:var(--mono);text-transform:none}
+  table.grid th.num,table.grid td.num{text-align:right}
+  table.grid td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--text)}
+  table.grid tbody tr{transition:background .1s}
+  table.grid tbody tr:hover td{background:var(--surface-3)}
+  table.grid tbody tr:last-child td{border-bottom:none}
+  td .null{font-family:var(--mono);font-size:10.5px;color:var(--faint);background:var(--surface-3);
+    padding:1px 6px;border-radius:5px}
+  td .dim{color:var(--faint)}
+  td .chip{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--surface-3);
+    border:1px solid var(--border);padding:2px 7px;border-radius:6px}
+  td .bool-t{color:var(--green-ink);background:var(--green-bg);padding:2px 9px;border-radius:999px;font-weight:600;font-size:11px}
+  td .bool-f{color:var(--muted);background:#f0eef6;padding:2px 9px;border-radius:999px;font-size:11px}
+  th.actions,td.actions{position:sticky;right:0;background:var(--surface-2);z-index:3;text-align:right;width:1%;
+    box-shadow:-8px 0 12px -8px rgba(38,20,80,.12)}
+  td.actions{background:var(--surface)}
+  tr:hover td.actions{background:var(--surface-3)}
+  td.actions .icon-btn{margin-left:5px}
+  .empty,.loading{padding:52px;text-align:center;color:var(--muted);font-size:13px}
+
+  /* ---------- overview / dashboard ---------- */
+  #table-view{flex:1;display:none;flex-direction:column;min-height:0}
+  #table-view.show{display:flex}
+  #overview{display:none}
+  #overview.show{display:block;flex:1;overflow:auto;padding:22px 20px 40px}
+  .ov-head{margin:0;font-size:16px;font-weight:700}
+  .ov-sub{margin:4px 0 0;color:var(--muted);font-size:12.5px}
+  .ov-label{font-size:10.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;
+    color:var(--faint);margin:26px 0 10px}
+  .stat-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:15px 16px 14px;box-shadow:var(--shadow-sm)}
+  .stat.accent{background:linear-gradient(140deg,color-mix(in srgb,var(--primary) 9%,var(--surface)),var(--surface));
+    border-color:color-mix(in srgb,var(--primary) 22%,var(--border))}
+  .stat .s-label{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--muted)}
+  .stat .s-label svg{width:15px;height:15px;color:var(--primary);flex:none}
+  .stat .s-num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;
+    font-size:30px;line-height:1;letter-spacing:-.02em;margin-top:9px;color:var(--text)}
+  .stat.big .s-num{font-size:34px}
+  .stat .s-meta{font-size:11px;color:var(--faint);margin-top:6px}
+  .ov-list{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    box-shadow:var(--shadow-sm);overflow:hidden}
+  .ov-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px}
+  .ov-row:last-child{border-bottom:none}
+  .ov-row .r-thumb{width:30px;height:30px;border-radius:7px;object-fit:cover;flex:none;
+    border:1px solid var(--border);background:var(--surface-3)}
+  .ov-row .r-name{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ov-row .r-date{color:var(--faint);font-size:11.5px;font-family:var(--mono)}
+  .ov-row.muted{color:var(--faint)}
+
+  /* ---------- modal ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(24,19,45,.5);display:none;align-items:flex-start;
+    justify-content:center;padding:48px 16px;overflow:auto;z-index:50;backdrop-filter:blur(2px)}
+  .overlay.open{display:flex}
+  .modal{background:var(--surface);border-radius:18px;width:520px;max-width:100%;box-shadow:var(--shadow);overflow:hidden}
+  .modal header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--surface-2)}
+  .modal header h3{margin:0;font-size:14px;font-weight:700}
+  .modal header .tag{font-family:var(--mono);color:var(--muted);font-size:11.5px}
+  .modal .body{padding:20px 22px;max-height:62vh;overflow:auto}
+  .modal footer{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--surface-2)}
+  .fld{margin-bottom:15px}
+  .fld label{display:block;color:var(--muted);font-size:11.5px;margin-bottom:6px;font-family:var(--mono)}
+  .fld label .req{color:var(--red)}
+  .fld label .meta{color:var(--faint);font-family:var(--font)}
+  .fld input,.fld select,.fld textarea{width:100%;padding:10px 12px;background:var(--surface-2);
+    border:1px solid var(--border-2);border-radius:10px;color:var(--text)}
+  .fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(109,59,228,.13)}
+  .fld textarea{min-height:76px;resize:vertical;font-family:inherit}
+  .fld .hint{color:var(--faint);font-size:11px;margin-top:5px}
+  .fld.readonly input{opacity:.55}
+  .img-uploader{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .img-preview{display:none;margin-top:10px;max-height:160px;border-radius:10px;border:1px solid var(--border)}
+  .cell-thumb{height:34px;width:34px;object-fit:cover;border-radius:7px;border:1px solid var(--border);vertical-align:middle;display:block}
+
+  /* ---------- toast ---------- */
+  #toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:100}
+  .toast{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--primary);
+    padding:11px 15px;border-radius:11px;max-width:360px;font-size:12.5px;white-space:pre-wrap;box-shadow:var(--shadow)}
+  .toast.error{border-left-color:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="center">
+  <svg class="login-scene" viewBox="0 0 1440 960" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <pattern id="win" width="30" height="38" patternUnits="userSpaceOnUse">
+        <rect x="7" y="8" width="16" height="20" rx="2.5" fill="#6d3be4" opacity="0.45"/>
+      </pattern>
+    </defs>
+    <!-- sun glow -->
+    <circle cx="1160" cy="150" r="70" fill="#fff" opacity="0.14"/>
+    <circle cx="1160" cy="150" r="140" fill="#fff" opacity="0.06"/>
+    <!-- rolling hills -->
+    <path d="M0 660 Q 320 560 640 630 T 1440 600 V960 H0 Z" fill="#4a25b8" opacity="0.35"/>
+    <path d="M0 730 Q 380 650 800 710 T 1440 680 V960 H0 Z" fill="#3a1c9e" opacity="0.45"/>
+    <!-- back buildings -->
+    <g fill="#2c1481" opacity="0.55">
+      <rect x="70" y="560" width="150" height="400" rx="6"/>
+      <rect x="1230" y="600" width="150" height="360" rx="6"/>
+      <rect x="250" y="640" width="110" height="320" rx="6"/>
+    </g>
+    <!-- hospital blocks -->
+    <g>
+      <rect x="300" y="600" width="150" height="360" rx="10" fill="#f4f1ff"/>
+      <rect x="470" y="452" width="240" height="508" rx="12" fill="#ffffff"/>
+      <rect x="740" y="540" width="180" height="420" rx="11" fill="#f6f3ff"/>
+      <rect x="950" y="600" width="160" height="360" rx="10" fill="#ffffff"/>
+    </g>
+    <!-- windows -->
+    <g>
+      <rect x="316" y="620" width="118" height="330" fill="url(#win)"/>
+      <rect x="486" y="560" width="208" height="390" fill="url(#win)"/>
+      <rect x="756" y="560" width="148" height="390" fill="url(#win)"/>
+      <rect x="966" y="620" width="128" height="330" fill="url(#win)"/>
+    </g>
+    <!-- entrance + big red cross sign on main tower -->
+    <rect x="545" y="860" width="90" height="100" rx="6" fill="#6d3be4" opacity="0.5"/>
+    <g fill="#e0464f">
+      <rect x="566" y="512" width="48" height="150" rx="6"/>
+      <rect x="515" y="563" width="150" height="48" rx="6"/>
+    </g>
+    <!-- rooftop crosses -->
+    <g fill="#e0464f">
+      <rect x="583" y="410" width="14" height="46"/><rect x="567" y="426" width="46" height="14"/>
+      <rect x="823" y="500" width="12" height="42"/><rect x="808" y="515" width="42" height="12"/>
+      <rect x="1022" y="560" width="12" height="42"/><rect x="1007" y="575" width="42" height="12"/>
+    </g>
+    <!-- palm trees -->
+    <g opacity="0.55">
+      <path d="M150 960 C 146 850 150 800 138 748" stroke="#160a4a" stroke-width="12" fill="none" stroke-linecap="round"/>
+      <g stroke="#160a4a" stroke-width="11" fill="none" stroke-linecap="round">
+        <path d="M138 748 C 100 720 70 726 44 748"/>
+        <path d="M138 748 C 176 720 208 726 236 748"/>
+        <path d="M138 748 C 112 706 96 676 92 640"/>
+        <path d="M138 748 C 164 706 182 678 190 642"/>
+      </g>
+      <path d="M1290 960 C 1286 870 1290 828 1300 786" stroke="#160a4a" stroke-width="11" fill="none" stroke-linecap="round"/>
+      <g stroke="#160a4a" stroke-width="10" fill="none" stroke-linecap="round">
+        <path d="M1300 786 C 1266 762 1238 768 1214 788"/>
+        <path d="M1300 786 C 1334 762 1360 770 1382 790"/>
+        <path d="M1300 786 C 1278 748 1266 720 1264 688"/>
+        <path d="M1300 786 C 1322 748 1338 722 1346 692"/>
+      </g>
+    </g>
+    <!-- ambulance -->
+    <g transform="translate(978 872)">
+      <rect x="0" y="0" width="126" height="54" rx="9" fill="#ffffff"/>
+      <path d="M126 12 h34 l22 26 v16 h-56 z" fill="#eceaf4"/>
+      <rect x="140" y="20" width="26" height="18" rx="3" fill="#bdb8d6"/>
+      <circle cx="34" cy="60" r="14" fill="#241247"/><circle cx="34" cy="60" r="6" fill="#8a84a8"/>
+      <circle cx="156" cy="60" r="14" fill="#241247"/><circle cx="156" cy="60" r="6" fill="#8a84a8"/>
+      <rect x="20" y="18" width="34" height="10" fill="#e0464f"/><rect x="32" y="6" width="10" height="34" fill="#e0464f"/>
+      <rect x="52" y="-9" width="22" height="9" rx="3" fill="#3b82f6"/>
+    </g>
+    <!-- ground -->
+    <rect x="0" y="934" width="1440" height="26" fill="#160a4a" opacity="0.55"/>
+  </svg>
+  <div class="login-veil"></div>
+  <form class="card" id="login-form">
+    <div class="card-head">
+      <div class="head-icon">🏥</div>
+      <h1>HospitalFinder Admin</h1>
+      <p>Sign in with an admin account</p>
+    </div>
+    <div class="card-body">
+      <label>Email</label>
+      <input type="email" id="li-email" autocomplete="username" required />
+      <label>Password</label>
+      <input type="password" id="li-pass" autocomplete="current-password" required />
+      <button class="btn primary" type="submit" id="li-btn">Sign in</button>
+      <div class="err" id="li-err"></div>
+    </div>
+  </form>
+</div>
+
+<!-- ACCESS DENIED -->
+<div id="denied" class="center" style="display:none">
+  <div class="card">
+    <div class="card-body">
+      <h1>Not an admin</h1>
+      <p class="sub">This account is signed in but does not have <code>is_admin = true</code> in the <code>profiles</code> table.</p>
+      <button class="btn" id="denied-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="appbar">
+    <div class="appbar-brand"><span class="dot"></span> HospitalFinder <span class="appbar-sub">Admin</span></div>
+    <span class="spacer"></span>
+    <span class="appbar-avatar" id="user-avatar"></span>
+    <span class="appbar-email" id="user-email"></span>
+    <button class="btn on-grad sm" id="signout">Sign out</button>
+  </header>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="side-label">Overview</div>
+      <div class="tables">
+        <div class="tbl-item" id="nav-overview"><span>Dashboard</span></div>
+      </div>
+      <div class="side-label">Tables</div>
+      <div class="tables" id="table-list"></div>
+    </aside>
+    <section class="main">
+      <div id="overview"></div>
+      <div id="table-view">
+        <div class="topbar">
+          <h2 id="cur-table">—</h2>
+          <span class="count" id="row-count"></span>
+          <span class="spacer"></span>
+          <span class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input class="search" id="search" placeholder="Filter rows…" />
+          </span>
+          <button class="btn" id="refresh">Refresh</button>
+          <button class="btn primary" id="insert">+ Insert</button>
+        </div>
+        <div class="grid-wrap" id="grid-wrap">
+          <div class="loading">Loading…</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <header>
+      <h3 id="modal-title">Insert row</h3>
+      <span class="tag" id="modal-tag"></span>
+    </header>
+    <div class="body" id="modal-body"></div>
+    <footer>
+      <button class="btn ghost" id="modal-cancel">Cancel</button>
+      <button class="btn primary" id="modal-save">Save</button>
+    </footer>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+/* =======================================================================
+   CONFIG  — anon key is safe in the client; RLS + is_admin() enforce writes
+   ======================================================================= */
+const SUPABASE_URL = "https://klwvscymnspnzxvgbkoc.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtsd3ZzY3ltbnNwbnp4dmdia29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjMxODIsImV4cCI6MjA3MzkzOTE4Mn0.M5Is7tN0VPvpmKtFCyw2yGF0icYls1xhfJWUnxqDTPU";
+
+/* Tables to manage, and the column used as a human label (for FK pickers). */
+const TABLES = ["hospitals", "services", "specialties", "notifications", "profiles"];
+const LABEL_COLUMN = {
+  hospitals: "name", services: "name", specialties: "name",
+  notifications: "title", profiles: "full_name",
+};
+/* text columns with a CHECK constraint aren't real enums — declare choices here */
+const ENUM_OVERRIDES = { notifications: { type: ["alert", "tip"] } };
+
+/* Supabase Storage bucket for hospital photos (see the storage SQL in chat) */
+const IMAGE_BUCKET = "hospital-images";
+
+/* Fallback schema if OpenAPI introspection fails. */
+const FALLBACK_SCHEMA = {
+  hospitals: ["id","name","address","latitude","longitude","phone_number","diseases","user_id","rating","review_count","image_url","is_open","created_at"],
+  services: ["id","hospital_id","name","created_at"],
+  specialties: ["id","hospital_id","name","created_at"],
+  notifications: ["id","title","message","type","active","user_id","created_at"],
+  profiles: ["id","full_name","daily_notifications_enabled","is_admin","created_at","updated_at"],
+};
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let SCHEMA = {};          // table -> { pk, orderBy, columns:[{name,type,format,isPk,isFk,fkTable,fkColumn,required,hasDefault,enumVals,maxLength}] }
+let currentTable = null;
+let rows = [];
+let fkCache = {};         // table -> [{id,label}]
+
+/* ---------------------------------------------------------------- helpers */
+const $ = (s) => document.querySelector(s);
+const el = (tag, props = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "dataset") Object.assign(n.dataset, v);
+    else if (k === "style" && typeof v === "object") Object.assign(n.style, v);
+    else n[k] = v;
+  }
+  for (const k of kids) n.append(k?.nodeType ? k : document.createTextNode(k ?? ""));
+  return n;
+};
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function toast(msg, type = "ok") {
+  const t = el("div", { className: "toast" + (type === "error" ? " error" : "") }, msg);
+  $("#toasts").append(t);
+  setTimeout(() => t.remove(), type === "error" ? 8000 : 4000);
+}
+
+function show(view) {
+  $("#login").style.display = view === "login" ? "flex" : "none";
+  $("#denied").style.display = view === "denied" ? "flex" : "none";
+  $("#app").style.display = view === "app" ? "flex" : "none";
+}
+
+/* ------------------------------------------------------------------- auth */
+$("#login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#li-err").textContent = "";
+  $("#li-btn").disabled = true;
+  const { data, error } = await db.auth.signInWithPassword({
+    email: $("#li-email").value.trim(),
+    password: $("#li-pass").value,
+  });
+  $("#li-btn").disabled = false;
+  if (error) { $("#li-err").textContent = error.message; return; }
+  gate(data.session);
+});
+$("#signout").onclick = $("#denied-signout").onclick = async () => {
+  await db.auth.signOut();
+  location.reload();
+};
+
+async function gate(session) {
+  if (!session) return show("login");
+  const { data: profile, error } = await db
+    .from("profiles").select("is_admin, full_name").eq("id", session.user.id).maybeSingle();
+  if (error || !profile || !profile.is_admin) return show("denied");
+  $("#user-email").textContent = session.user.email;
+  $("#user-avatar").textContent =
+    (profile.full_name || session.user.email || "?").trim().slice(0, 1).toUpperCase();
+  await loadSchema();
+  renderSidebar();
+  show("app");
+  showOverview();
+}
+
+/* --------------------------------------------------------------- schema */
+async function loadSchema() {
+  let spec = null;
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const token = session?.access_token || SUPABASE_ANON_KEY;
+    const res = await fetch(SUPABASE_URL + "/rest/v1/", {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + token },
+    });
+    if (res.ok) spec = await res.json();
+  } catch (_) { /* fall through to the built-in fallback schema */ }
+
+  for (const t of TABLES) {
+    const def = spec && spec.definitions && spec.definitions[t];
+    let columns;
+    if (def && def.properties) {
+      const required = def.required || [];
+      columns = Object.entries(def.properties).map(([name, p]) => {
+        const desc = p.description || "";
+        const fk = desc.match(/<fk table='([^']+)' column='([^']+)'\/>/i);
+        const fkTable = fk ? fk[1].replace(/^public\./, "") : null;
+        const usableFk = fkTable && TABLES.includes(fkTable);
+        const enumOverride = (ENUM_OVERRIDES[t] || {})[name];
+        return {
+          name,
+          type: p.type || "string",
+          format: p.format || "",
+          isPk: /Primary Key/i.test(desc),
+          isFk: usableFk,
+          fkTable: usableFk ? fkTable : null,
+          fkColumn: fk ? fk[2] : null,
+          required: required.includes(name),
+          hasDefault: p.default !== undefined || /Primary Key/i.test(desc)
+            || name === "created_at" || name === "updated_at",
+          enumVals: enumOverride || p.enum || null,
+          maxLength: p.maxLength || null,
+        };
+      });
+    } else {
+      columns = (FALLBACK_SCHEMA[t] || ["id"]).map((name) => ({
+        name,
+        type: /latitude|longitude|rating/.test(name) ? "number"
+          : /count/.test(name) ? "integer"
+          : /is_|_enabled|^active$|is_admin/.test(name) ? "boolean" : "string",
+        format: name === "id" || name.endsWith("_id") ? "uuid"
+          : name.endsWith("_at") ? "timestamp with time zone" : "",
+        isPk: name === "id",
+        isFk: name.endsWith("_id") && name !== "id",
+        fkTable: name === "hospital_id" ? "hospitals" : name === "user_id" ? null : null,
+        fkColumn: name.endsWith("_id") ? "id" : null,
+        required: name === "name" || name === "title" || name === "message",
+        hasDefault: name === "id" || name.endsWith("_at")
+          || /_enabled|^active$|is_admin/.test(name),
+        enumVals: (ENUM_OVERRIDES[t] || {})[name] || null,
+        maxLength: null,
+      }));
+    }
+    const pk = (columns.find((c) => c.isPk) || columns[0]).name;
+    const orderBy = columns.some((c) => c.name === "created_at") ? "created_at" : pk;
+    SCHEMA[t] = { pk, orderBy, columns };
+  }
+}
+
+/* -------------------------------------------------------------- sidebar */
+const SVG = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const TABLE_ICONS = {
+  hospitals: SVG('<path d="M4 21V8l8-5 8 5v13"/><path d="M2 21h20"/><path d="M12 8.5v5M9.5 11h5"/><path d="M9.5 21v-4h5v4"/>'),
+  services: SVG('<rect x="2.5" y="7" width="19" height="13.5" rx="2"/><path d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h3A2.5 2.5 0 0 1 16 5.5V7"/><path d="M12 11.5v5M9.5 14h5"/>'),
+  specialties: SVG('<path d="M6 3v5a4 4 0 0 0 8 0V3"/><path d="M4.5 3H8M12 3h3.5"/><path d="M10 15.5V17a5 5 0 0 0 10 0v-2"/><circle cx="20" cy="12" r="2"/>'),
+  notifications: SVG('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'),
+  profiles: SVG('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5.2a3.2 3.2 0 0 1 0 6.4M17.5 20c0-2.6-1-4.9-2.6-6.3"/>'),
+};
+const DEFAULT_ICON = SVG('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>');
+const IC = {
+  dash: SVG('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
+  hosp: TABLE_ICONS.hospitals,
+  svc: TABLE_ICONS.services,
+  spec: TABLE_ICONS.specialties,
+  user: TABLE_ICONS.profiles,
+  bell: TABLE_ICONS.notifications,
+  tip: SVG('<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3Z"/>'),
+  img: SVG('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="m21 16-5-5L5 20"/>'),
+  open: SVG('<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/>'),
+  shield: SVG('<path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6Z"/><path d="m9 12 2 2 4-4"/>'),
+};
+
+function renderSidebar() {
+  const nav = $("#nav-overview");
+  nav.innerHTML = IC.dash + "<span>Dashboard</span>";
+  nav.onclick = showOverview;
+
+  const list = $("#table-list");
+  list.innerHTML = "";
+  for (const t of TABLES) {
+    const item = el("div", { className: "tbl-item", dataset: { t } });
+    item.innerHTML = (TABLE_ICONS[t] || DEFAULT_ICON) + "<span>" + t + "</span>";
+    item.onclick = () => selectTable(t);
+    list.append(item);
+  }
+}
+
+/* ------------------------------------------------------------- overview */
+function showOverview() {
+  currentTable = null;
+  document.querySelectorAll(".tbl-item").forEach((n) => n.classList.remove("active"));
+  $("#nav-overview").classList.add("active");
+  $("#table-view").classList.remove("show");
+  $("#overview").classList.add("show");
+  loadOverview();
+}
+
+async function ovCount(table, build) {
+  let q = db.from(table).select("*", { count: "exact", head: true });
+  if (build) q = build(q);
+  const { count, error } = await q;
+  return error ? null : (count ?? 0);
+}
+
+async function loadOverview() {
+  const ov = $("#overview");
+  ov.innerHTML =
+    '<h2 class="ov-head">Overview</h2>' +
+    '<p class="ov-sub">Live counts across the HospitalFinder database.</p>' +
+    '<div class="ov-label">At a glance</div><div class="stat-grid" id="ov-a"></div>' +
+    '<div class="ov-label">Content breakdown</div><div class="stat-grid" id="ov-b"></div>' +
+    '<div class="ov-label">Recently added hospitals</div>' +
+    '<div class="ov-list" id="ov-recent"><div class="ov-row muted">Loading…</div></div>';
+
+  const [hosp, svc, spec, users, admins, alerts, tips, photos, openNow] =
+    await Promise.all([
+      ovCount("hospitals"),
+      ovCount("services"),
+      ovCount("specialties"),
+      ovCount("profiles"),
+      ovCount("profiles", (q) => q.eq("is_admin", true)),
+      ovCount("notifications", (q) => q.eq("type", "alert")),
+      ovCount("notifications", (q) => q.eq("type", "tip")),
+      ovCount("hospitals", (q) => q.not("image_url", "is", null)),
+      ovCount("hospitals", (q) => q.eq("is_open", true)),
+    ]);
+
+  const fmt = (n) => (n == null ? "—" : Number(n).toLocaleString());
+  const card = (label, num, meta, icon, cls) =>
+    '<div class="stat ' + (cls || "") + '">' +
+      '<div class="s-label">' + (icon || "") + "<span>" + label + "</span></div>" +
+      '<div class="s-num">' + fmt(num) + "</div>" +
+      (meta ? '<div class="s-meta">' + meta + "</div>" : "") +
+    "</div>";
+
+  const perHosp = (hosp && svc != null && hosp > 0)
+    ? (svc / hosp).toFixed(1) + " per hospital" : null;
+  const photoPct = (hosp && photos != null && hosp > 0)
+    ? Math.round((photos / hosp) * 100) + "% of hospitals" : null;
+
+  $("#ov-a").innerHTML =
+    card("Hospitals", hosp, null, IC.hosp, "big accent") +
+    card("Services", svc, perHosp, IC.svc, "big") +
+    card("Specialties", spec, null, IC.spec, "big") +
+    card("Registered users", users, fmt(admins) + (admins === 1 ? " admin" : " admins"), IC.user, "big");
+
+  $("#ov-b").innerHTML =
+    card("Alerts", alerts, "notifications · alert", IC.bell) +
+    card("Health tips", tips, "notifications · tip", IC.tip) +
+    card("Hospitals with a photo", photos, photoPct, IC.img) +
+    card("Marked open", openNow, "is_open = true", IC.open) +
+    card("Admins", admins, "profiles · is_admin", IC.shield);
+
+  const { data: recent } = await db.from("hospitals")
+    .select("name, image_url, created_at")
+    .order("created_at", { ascending: false })
+    .limit(5);
+  const list = $("#ov-recent");
+  if (!recent || !recent.length) {
+    list.innerHTML = '<div class="ov-row muted">No hospitals yet.</div>';
+  } else {
+    list.innerHTML = recent.map((r) =>
+      '<div class="ov-row">' +
+        (r.image_url
+          ? '<img class="r-thumb" src="' + escapeHtml(String(r.image_url)) + '" alt="">'
+          : '<span class="r-thumb"></span>') +
+        '<span class="r-name">' + escapeHtml(r.name || "—") + "</span>" +
+        '<span class="r-date">' +
+          (r.created_at ? new Date(r.created_at).toLocaleDateString() : "") +
+        "</span>" +
+      "</div>"
+    ).join("");
+  }
+}
+
+/* ---------------------------------------------------------------- grid */
+async function selectTable(t) {
+  currentTable = t;
+  $("#nav-overview").classList.remove("active");
+  $("#overview").classList.remove("show");
+  $("#table-view").classList.add("show");
+  document.querySelectorAll(".tbl-item").forEach((n) =>
+    n.classList.toggle("active", n.dataset.t === t));
+  $("#cur-table").textContent = t;
+  $("#search").value = "";
+  await loadRows();
+}
+
+async function loadRows() {
+  $("#grid-wrap").innerHTML = '<div class="loading">Loading…</div>';
+  const s = SCHEMA[currentTable];
+  const { data, error } = await db.from(currentTable)
+    .select("*")
+    .order(s.orderBy, { ascending: s.orderBy !== "created_at" })
+    .limit(1000);
+  if (error) {
+    $("#grid-wrap").innerHTML = '<div class="empty">' + escapeHtml(error.message) + "</div>";
+    $("#row-count").textContent = "";
+    return;
+  }
+  rows = data || [];
+  $("#row-count").textContent = rows.length + (rows.length === 1000 ? "+ rows" : " rows");
+  renderGrid();
+}
+
+function fmtCell(v, col) {
+  if (v === null || v === undefined) return '<span class="null">null</span>';
+  if (col.type === "boolean") return v
+    ? '<span class="bool-t">true</span>' : '<span class="bool-f">false</span>';
+  if (String(col.format).includes("timestamp")) {
+    const d = new Date(v);
+    return isNaN(d) ? escapeHtml(v)
+      : '<span class="dim">' + escapeHtml(d.toLocaleString()) + '</span>';
+  }
+  if (/^(image_url|photo_url|image|photo)$/.test(col.name) &&
+      /^https?:\/\//.test(String(v))) {
+    return '<img class="cell-thumb" src="' + escapeHtml(String(v)) + '" alt="">';
+  }
+  if (/uuid/i.test(col.format) || col.isPk || (col.isFk && /_id$/.test(col.name))) {
+    const s = String(v);
+    return '<span class="chip" title="' + escapeHtml(s) + '">' +
+      escapeHtml(s.length > 8 ? s.slice(0, 8) + "…" : s) + '</span>';
+  }
+  const str = typeof v === "object" ? JSON.stringify(v) : String(v);
+  return escapeHtml(str);
+}
+
+function renderGrid() {
+  const s = SCHEMA[currentTable];
+  const q = $("#search").value.trim().toLowerCase();
+  const view = q
+    ? rows.filter((r) => Object.values(r).some((v) =>
+        String(v ?? "").toLowerCase().includes(q)))
+    : rows;
+
+  if (!view.length) {
+    $("#grid-wrap").innerHTML = '<div class="empty">' +
+      (rows.length ? "No rows match the filter." : "This table is empty.") + "</div>";
+    return;
+  }
+
+  const isNum = (c) => c.type === "integer" || c.type === "number";
+
+  const table = el("table", { className: "grid" });
+  const thead = el("thead");
+  const htr = el("tr");
+  for (const c of s.columns) {
+    const th = el("th");
+    if (isNum(c)) th.className = "num";
+    th.innerHTML = '<span class="colname">' + escapeHtml(c.name) + "</span>" +
+      '<span class="coltype">' + escapeHtml(c.format || c.type) +
+      (c.isPk ? " · pk" : "") + (c.isFk ? " · fk" : "") + "</span>";
+    htr.append(th);
+  }
+  htr.append(el("th", { className: "actions" }, ""));
+  thead.append(htr);
+  table.append(thead);
+
+  const tbody = el("tbody");
+  for (const r of view) {
+    const tr = el("tr");
+    for (const c of s.columns) {
+      const td = el("td");
+      if (isNum(c)) td.className = "num";
+      td.innerHTML = fmtCell(r[c.name], c);
+      if (typeof r[c.name] === "string" && r[c.name].length > 32) td.title = r[c.name];
+      tr.append(td);
+    }
+    const act = el("td", { className: "actions" });
+    const edit = el("button", { className: "icon-btn edit", title: "Edit" });
+    edit.innerHTML = SVG('<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>');
+    edit.onclick = () => openModal("edit", r);
+    const del = el("button", { className: "icon-btn del", title: "Delete" });
+    del.innerHTML = SVG('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/>');
+    del.onclick = () => deleteRow(r);
+    act.append(edit, del);
+    tr.append(act);
+    tbody.append(tr);
+  }
+  table.append(tbody);
+
+  const wrap = $("#grid-wrap");
+  wrap.innerHTML = "";
+  wrap.append(table);
+}
+
+$("#search").addEventListener("input", renderGrid);
+$("#refresh").onclick = loadRows;
+$("#insert").onclick = () => openModal("insert", null);
+
+/* ---------------------------------------------------------------- modal */
+let modalMode = "insert";
+let modalRow = null;
+let modalInputs = {};
+
+async function ensureFkOptions(fkTable) {
+  if (fkCache[fkTable]) return fkCache[fkTable];
+  const label = LABEL_COLUMN[fkTable] || "id";
+  const sel = label === "id" ? "id" : "id," + label;
+  const { data } = await db.from(fkTable).select(sel).limit(500);
+  fkCache[fkTable] = (data || []).map((r) => ({
+    id: r.id, label: (r[label] ?? "") + "  (" + String(r.id).slice(0, 8) + "…)",
+  }));
+  return fkCache[fkTable];
+}
+
+function editableColumns(s, mode) {
+  return s.columns.filter((c) => {
+    if (c.name === "created_at" || c.name === "updated_at") return false;
+    if (mode === "insert" && c.isPk && c.hasDefault) return false;
+    return true;
+  });
+}
+
+async function openModal(mode, row) {
+  modalMode = mode;
+  modalRow = row;
+  modalInputs = {};
+  const s = SCHEMA[currentTable];
+  $("#modal-title").textContent = mode === "insert" ? "Insert row" : "Update row";
+  $("#modal-tag").textContent = currentTable + (mode === "edit" ? " · " + row[s.pk] : "");
+
+  const body = $("#modal-body");
+  body.innerHTML = "";
+
+  for (const c of editableColumns(s, mode)) {
+    const fld = el("div", { className: "fld" });
+    const lockedPk = mode === "edit" && c.isPk;
+    if (lockedPk) fld.classList.add("readonly");
+
+    const lab = el("label");
+    lab.innerHTML = escapeHtml(c.name) +
+      (c.required && !c.hasDefault ? ' <span class="req">*</span>' : "") +
+      ' <span class="meta">' + escapeHtml(c.format || c.type) + "</span>";
+    fld.append(lab);
+
+    const cur = row ? row[c.name] : undefined;
+    let input;
+
+    if (c.isFk && c.fkTable) {
+      input = el("select");
+      input.append(el("option", { value: "" }, "— null —"));
+      const opts = await ensureFkOptions(c.fkTable);
+      for (const o of opts) input.append(el("option", { value: o.id }, o.label));
+      input.value = cur ?? "";
+    } else if (c.enumVals) {
+      input = el("select");
+      if (!c.required) input.append(el("option", { value: "" }, "— null —"));
+      for (const v of c.enumVals) input.append(el("option", { value: v }, v));
+      input.value = cur ?? (c.required ? c.enumVals[0] : "");
+    } else if (c.type === "boolean") {
+      input = el("select");
+      input.append(el("option", { value: "" }, "— null —"),
+        el("option", { value: "true" }, "true"),
+        el("option", { value: "false" }, "false"));
+      input.value = cur === true ? "true" : cur === false ? "false" : "";
+    } else if (c.type === "integer" || c.type === "number") {
+      input = el("input", { type: "number", step: c.type === "integer" ? "1" : "any" });
+      input.value = cur ?? "";
+    } else if (c.name === "image_url" || c.name === "photo_url" ||
+               c.name === "image" || c.name === "photo") {
+      // Filled by uploading a file, not by typing.
+      input = el("input", { type: "hidden" });
+      input.value = cur ?? "";
+    } else if ((c.maxLength && c.maxLength > 120) || c.name === "message" || c.name === "address") {
+      input = el("textarea");
+      input.value = cur ?? "";
+    } else {
+      input = el("input", { type: "text" });
+      input.value = cur ?? "";
+    }
+
+    if (lockedPk) input.disabled = true;
+    fld.append(input);
+    if (c.isPk && mode === "insert")
+      fld.append(el("div", { className: "hint" }, "Leave blank to auto-generate."));
+    if (input.type === "hidden") attachImageUploader(fld, input);
+    body.append(fld);
+    modalInputs[c.name] = { input, col: c };
+  }
+
+  $("#overlay").classList.add("open");
+}
+
+/* Image field = upload only. The file goes to Supabase Storage and its public
+   URL is written into the hidden `input` that gets saved with the row. */
+function attachImageUploader(fld, input) {
+  const row = el("div", { className: "img-uploader" });
+  const file = el("input", { type: "file", accept: "image/*" });
+  file.style.display = "none";
+  const btn = el("button", { type: "button", className: "btn sm" }, "Choose image…");
+  const remove = el("button", { type: "button", className: "btn sm ghost" }, "Remove");
+  const status = el("span", { className: "hint" });
+  const preview = el("img", { className: "img-preview" });
+
+  const refresh = () => {
+    const hasUrl = !!input.value;
+    preview.style.display = hasUrl ? "block" : "none";
+    if (hasUrl) preview.src = input.value;
+    remove.style.display = hasUrl ? "inline-flex" : "none";
+    btn.textContent = hasUrl ? "Replace image…" : "Choose image…";
+    if (!status.textContent) {
+      status.textContent = hasUrl ? "" : "No image yet";
+    }
+  };
+
+  btn.onclick = () => file.click();
+  remove.onclick = () => { input.value = ""; status.textContent = "Removed"; refresh(); };
+
+  file.onchange = async () => {
+    const f = file.files && file.files[0];
+    if (!f) return;
+    btn.disabled = true;
+    status.textContent = "Uploading…";
+    try {
+      const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const up = await db.storage.from(IMAGE_BUCKET).upload(path, f, {
+        contentType: f.type || "image/jpeg",
+        upsert: false,
+      });
+      if (up.error) throw up.error;
+      const { data } = db.storage.from(IMAGE_BUCKET).getPublicUrl(path);
+      input.value = data.publicUrl;          // <- this URL is saved to the row
+      status.textContent = "Uploaded";
+      refresh();
+    } catch (e) {
+      status.textContent = "";
+      toast("Upload failed: " + (e.message || e), "error");
+    } finally {
+      btn.disabled = false;
+      file.value = "";
+    }
+  };
+
+  row.append(btn, remove, status, file);
+  fld.append(row, preview);
+  refresh();
+}
+
+$("#modal-cancel").onclick = () => $("#overlay").classList.remove("open");
+$("#overlay").addEventListener("click", (e) => {
+  if (e.target.id === "overlay") $("#overlay").classList.remove("open");
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") $("#overlay").classList.remove("open");
+});
+
+function collectValue({ input, col }) {
+  let raw = input.value;
+  if (typeof raw === "string") raw = raw.trim();
+  if (raw === "" || raw == null) return null;
+  if (col.type === "boolean") return raw === "true";
+  if (col.type === "integer") return parseInt(raw, 10);
+  if (col.type === "number") return parseFloat(raw);
+  return raw;
+}
+
+$("#modal-save").onclick = async () => {
+  const s = SCHEMA[currentTable];
+  const btn = $("#modal-save");
+  btn.disabled = true;
+
+  try {
+    if (modalMode === "insert") {
+      const payload = {};
+      for (const key in modalInputs) {
+        const v = collectValue(modalInputs[key]);
+        const col = modalInputs[key].col;
+        if (v === null) {
+          if (col.required && !col.hasDefault)
+            throw new Error("`" + key + "` is required.");
+          continue;
+        }
+        payload[key] = v;
+      }
+      const { error } = await db.from(currentTable).insert(payload);
+      if (error) throw error;
+      toast("Row inserted into " + currentTable);
+    } else {
+      const patch = {};
+      for (const key in modalInputs) {
+        if (modalInputs[key].col.isPk) continue;
+        const v = collectValue(modalInputs[key]);
+        const before = modalRow[key] ?? null;
+        if (JSON.stringify(v) !== JSON.stringify(before)) patch[key] = v;
+      }
+      if (!Object.keys(patch).length) { toast("Nothing changed."); }
+      else {
+        const { error } = await db.from(currentTable)
+          .update(patch).eq(s.pk, modalRow[s.pk]);
+        if (error) throw error;
+        toast("Row updated.");
+      }
+    }
+    $("#overlay").classList.remove("open");
+    await loadRows();
+  } catch (err) {
+    toast((err.message || String(err)) +
+      (err.hint ? "\n" + err.hint : ""), "error");
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+async function deleteRow(r) {
+  const s = SCHEMA[currentTable];
+  if (!confirm("Delete this row from " + currentTable + "?\n" + s.pk + " = " + r[s.pk])) return;
+  const { error } = await db.from(currentTable).delete().eq(s.pk, r[s.pk]);
+  if (error) { toast(error.message + (error.hint ? "\n" + error.hint : ""), "error"); return; }
+  toast("Row deleted.");
+  await loadRows();
+}
+
+/* --------------------------------------------------------------- start */
+db.auth.getSession().then(({ data }) => gate(data.session));
+</script>
+</body>
+</html>

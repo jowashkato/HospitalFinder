@@ -38,7 +38,7 @@ jobs:
           if-no-files-found: warn
 
   ios:
-    name: iOS (unsigned)
+    name: iOS (compile check)
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v5
@@ -48,17 +48,16 @@ jobs:
           cache: true
       - run: flutter --version
       - run: flutter pub get
-      - run: flutter build ios --release --no-codesign
-      - name: Package unsigned .app as .ipa
+      # Simulator build: compiles the whole iOS app with no signing / Apple account.
+      - run: flutter build ios --simulator
+      - name: Zip simulator app
         run: |
           set -e
-          cd build/ios/iphoneos
-          mkdir -p Payload
-          cp -R Runner.app Payload/
-          zip -qr app-unsigned.ipa Payload
+          cd build/ios/iphonesimulator
+          zip -qr Runner-simulator.app.zip Runner.app
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: app-ios-unsigned
-          path: hospitalfinder/build/ios/iphoneos/app-unsigned.ipa
+          name: app-ios-simulator
+          path: hospitalfinder/build/ios/iphonesimulator/Runner-simulator.app.zip
           if-no-files-found: warn

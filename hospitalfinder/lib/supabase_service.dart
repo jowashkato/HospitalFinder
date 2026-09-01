@@ -197,26 +197,21 @@ class SupabaseService {
     }
   }
 
-  /// Fetch hospitals near a given location within a radius (km).
+  /// Hospitals ordered by distance from the given location.
+  ///
+  /// Returns everything within [radiusInKm]; if nothing is that close (the user
+  /// is far from any hospital), it still returns the 10 nearest so the screen is
+  /// never empty.
   Future<List<Hospital>> getNearbyHospitals({
     required double latitude,
     required double longitude,
-    double radiusInKm = 5.0,
+    double radiusInKm = 25.0,
   }) async {
     try {
-      // Approximate conversion: 1° ~ 111 km
-      final double degreeRadius = radiusInKm / 111.0;
+      final all = await getHospitals();
 
-      final response = await supabase
-          .from('hospitals')
-          .select(_hospitalSelect)
-          .gte('latitude', latitude - degreeRadius)
-          .lte('latitude', latitude + degreeRadius)
-          .gte('longitude', longitude - degreeRadius)
-          .lte('longitude', longitude + degreeRadius);
-
-      final hospitals = response
-          .map((e) => Hospital.fromMap(e))
+      final ranked = all
+          .where((h) => h.latitude != 0 || h.longitude != 0)
           .map((h) => h.copyWith(
                 distanceKm: _haversineKm(
                   latitude,
@@ -225,11 +220,14 @@ class SupabaseService {
                   h.longitude,
                 ),
               ))
-          .where((h) => (h.distanceKm ?? double.infinity) <= radiusInKm)
           .toList()
         ..sort((a, b) => (a.distanceKm ?? 0).compareTo(b.distanceKm ?? 0));
 
-      return hospitals;
+      final inRange = ranked
+          .where((h) => (h.distanceKm ?? double.infinity) <= radiusInKm)
+          .toList();
+
+      return inRange.isNotEmpty ? inRange : ranked.take(10).toList();
     } catch (e) {
       if (kDebugMode) {
         print('Error fetching nearby hospitals: $e');

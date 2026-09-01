@@ -1,6 +1,4 @@
-﻿import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:location/location.dart';
+﻿import 'package:flutter/material.dart';
 import 'app_theme.dart';
 import 'browse_page.dart';
 import 'hospital.dart';
@@ -18,12 +16,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final SupabaseService _supabaseService = SupabaseService();
   late Future<List<Hospital>> _hospitalsFuture;
-  final TextEditingController _searchController = TextEditingController();
-  final FocusNode _searchFocus = FocusNode();
-  Timer? _debounce;
 
   int _navIndex = 0;
-  bool _showingNearby = false;
   String? _firstName;
 
   final List<_Category> _categories = const [
@@ -37,10 +31,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _hospitalsFuture = _supabaseService.getHospitals();
-    // Keep the clear button in sync with the field contents.
-    _searchController.addListener(() {
-      if (mounted) setState(() {});
-    });
     _loadUserName();
   }
 
@@ -55,78 +45,30 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _searchController.dispose();
-    _searchFocus.dispose();
-    super.dispose();
-  }
-
   // ---------------------------------------------------------------------------
-  // Data actions
+  // Navigation
   // ---------------------------------------------------------------------------
 
-  void _searchHospitals(String query) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      setState(() {
-        _showingNearby = false;
-        _hospitalsFuture = _supabaseService.getHospitals(searchQuery: query);
-      });
-    });
-  }
-
-  void _resetSearch() {
-    _searchController.clear();
-    setState(() {
-      _showingNearby = false;
-      _hospitalsFuture = _supabaseService.getHospitals();
-    });
-  }
-
-  Future<void> _refresh() async {
-    final future = _showingNearby
-        ? _findNearbyHospitals()
-        : _supabaseService.getHospitals(
-            searchQuery: _searchController.text.trim());
-    setState(() => _hospitalsFuture = future);
-    await future;
-  }
-
-  Future<List<Hospital>> _findNearbyHospitals() async {
-    final location = Location();
-
-    bool serviceEnabled = await location.serviceEnabled();
-    if (!serviceEnabled) {
-      serviceEnabled = await location.requestService();
-      if (!serviceEnabled) return _supabaseService.getHospitals();
-    }
-
-    PermissionStatus permissionGranted = await location.hasPermission();
-    if (permissionGranted == PermissionStatus.denied) {
-      permissionGranted = await location.requestPermission();
-      if (permissionGranted != PermissionStatus.granted) {
-        return _supabaseService.getHospitals();
-      }
-    }
-
-    final userLocation = await location.getLocation();
-    final lat = userLocation.latitude ?? 0.0;
-    final lng = userLocation.longitude ?? 0.0;
-
-    return _supabaseService.getNearbyHospitals(
-      latitude: lat,
-      longitude: lng,
-      radiusInKm: 5.0,
+  void _openSearch([String query = '']) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SearchPage(initialQuery: query.trim()),
+      ),
     );
   }
 
-  void _onNearbyPressed() {
-    setState(() {
-      _showingNearby = true;
-      _hospitalsFuture = _findNearbyHospitals();
-    });
+  void _openNearby() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NearbyPage()),
+    );
+  }
+
+  Future<void> _refresh() async {
+    final future = _supabaseService.getHospitals();
+    setState(() => _hospitalsFuture = future);
+    await future;
   }
 
   void _onCategoryTap(String label) {
@@ -277,14 +219,17 @@ class _HomePageState extends State<HomePage> {
       });
       return;
     }
-    setState(() => _navIndex = index);
     switch (index) {
       case 1:
-        _searchFocus.requestFocus();
+        _openSearch();
+        if (mounted) setState(() => _navIndex = 0);
         break;
       case 2:
+        setState(() => _navIndex = 2);
         _showNotifications();
         break;
+      default:
+        setState(() => _navIndex = index);
     }
   }
 
@@ -323,9 +268,9 @@ class _HomePageState extends State<HomePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      _SectionTitle(_showingNearby ? 'Nearby' : 'Top Rated'),
+                      const _SectionTitle('Top Rated'),
                       GestureDetector(
-                        onTap: _resetSearch,
+                        onTap: _openSearch,
                         behavior: HitTestBehavior.opaque,
                         child: const Padding(
                           padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
@@ -463,68 +408,55 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F231147),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.only(left: 16, right: 6),
-      child: Row(
-        children: [
-          const Icon(Icons.search_rounded,
-              color: AppColors.textSecondary, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              focusNode: _searchFocus,
-              onChanged: _searchHospitals,
-              textInputAction: TextInputAction.search,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textPrimary,
-              ),
-              decoration: const InputDecoration(
-                isCollapsed: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 16),
-                hintText: 'Hospital, service, or disease…',
-                hintStyle: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                ),
-                border: InputBorder.none,
-              ),
+    return GestureDetector(
+      onTap: _openSearch,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1F231147),
+              blurRadius: 16,
+              offset: Offset(0, 6),
             ),
-          ),
-          if (_searchController.text.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.close_rounded, size: 18),
-              color: AppColors.textSecondary,
-              onPressed: _resetSearch,
-            ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: ElevatedButton(
-              onPressed: () =>
-                  _searchHospitals(_searchController.text.trim()),
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(11),
+          ],
+        ),
+        padding: const EdgeInsets.only(left: 16, right: 6),
+        child: Row(
+          children: [
+            const Icon(Icons.search_rounded,
+                color: AppColors.textSecondary, size: 22),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  'Hospital, service, or disease…',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
                 ),
               ),
-              child: const Text('Search'),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: ElevatedButton(
+                onPressed: _openSearch,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 18, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                ),
+                child: const Text('Search'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -533,7 +465,7 @@ class _HomePageState extends State<HomePage> {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: _onNearbyPressed,
+        onPressed: _openNearby,
         icon: const Icon(Icons.near_me_rounded,
             color: Colors.white, size: 19),
         label: const Text(

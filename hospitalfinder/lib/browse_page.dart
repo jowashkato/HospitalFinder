@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:location/location.dart';
 
 import 'app_theme.dart';
 import 'hospital.dart';
@@ -258,6 +259,315 @@ class _TagListPageState extends State<TagListPage> {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Search: a field + live results filtered over every hospital.
+// ---------------------------------------------------------------------------
+
+class SearchPage extends StatefulWidget {
+  final String initialQuery;
+  const SearchPage({super.key, this.initialQuery = ''});
+
+  @override
+  State<SearchPage> createState() => _SearchPageState();
+}
+
+class _SearchPageState extends State<SearchPage> {
+  final SupabaseService _service = SupabaseService();
+  final TextEditingController _controller = TextEditingController();
+  late Future<List<Hospital>> _all;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _all = _service.getHospitals();
+    _controller.text = widget.initialQuery;
+    _query = widget.initialQuery.trim();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.scaffold,
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        titleSpacing: 0,
+        title: Container(
+          height: 42,
+          margin: const EdgeInsets.only(right: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.search_rounded,
+                  color: AppColors.textSecondary, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  autofocus: widget.initialQuery.isEmpty,
+                  textInputAction: TextInputAction.search,
+                  onChanged: (v) => setState(() => _query = v.trim()),
+                  style: const TextStyle(
+                      fontSize: 14, color: AppColors.textPrimary),
+                  decoration: const InputDecoration(
+                    isCollapsed: true,
+                    border: InputBorder.none,
+                    hintText: 'Hospital, service, specialty, disease…',
+                    hintStyle: TextStyle(
+                        color: AppColors.textSecondary, fontSize: 13.5),
+                  ),
+                ),
+              ),
+              if (_query.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
+                    _controller.clear();
+                    setState(() => _query = '');
+                  },
+                  child: const Icon(Icons.close_rounded,
+                      color: AppColors.textSecondary, size: 18),
+                ),
+            ],
+          ),
+        ),
+      ),
+      body: FutureBuilder<List<Hospital>>(
+        future: _all,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary));
+          }
+          if (snap.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Text('Error: ${snap.error}',
+                    style: const TextStyle(color: Colors.red)),
+              ),
+            );
+          }
+          final all = snap.data ?? const [];
+          if (_query.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text(
+                  'Type to search hospitals by name, service,\nspecialty, disease or location.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary, height: 1.5),
+                ),
+              ),
+            );
+          }
+          final results =
+              all.where((h) => h.matchesQuery(_query)).toList();
+          if (results.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Text('No matches for “$_query”.',
+                    style: const TextStyle(color: AppColors.textSecondary)),
+              ),
+            );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+            itemCount: results.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (_, i) => HospitalCard(hospital: results[i]),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Nearby: request location, then show hospitals ordered by distance.
+// ---------------------------------------------------------------------------
+
+class NearbyPage extends StatefulWidget {
+  const NearbyPage({super.key});
+
+  @override
+  State<NearbyPage> createState() => _NearbyPageState();
+}
+
+class _NearbyPageState extends State<NearbyPage> {
+  final SupabaseService _service = SupabaseService();
+  Future<List<Hospital>>? _future;
+  String? _message;
+  bool _busy = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _locateAndLoad();
+  }
+
+  Future<void> _locateAndLoad() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+      _future = null;
+    });
+    try {
+      final location = Location();
+
+      if (!await location.serviceEnabled()) {
+        if (!await location.requestService()) {
+          _fail('Location is turned off. Enable GPS / location and try again.');
+          return;
+        }
+      }
+
+      var permission = await location.hasPermission();
+      if (permission == PermissionStatus.denied) {
+        permission = await location.requestPermission();
+      }
+      if (permission != PermissionStatus.granted &&
+          permission != PermissionStatus.grantedLimited) {
+        _fail('Location permission is required to find hospitals near you.');
+        return;
+      }
+
+      final pos = await location.getLocation();
+      final lat = pos.latitude;
+      final lng = pos.longitude;
+      if (lat == null || lng == null) {
+        _fail('Could not read your location. Please try again.');
+        return;
+      }
+
+      setState(() {
+        _busy = false;
+        _future = _service.getNearbyHospitals(latitude: lat, longitude: lng);
+      });
+    } catch (e) {
+      _fail('Location error: $e');
+    }
+  }
+
+  void _fail(String msg) {
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _message = msg;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.scaffold,
+      appBar: AppBar(
+        title: const Text('Nearby hospitals'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_busy) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: AppColors.primary),
+            SizedBox(height: 14),
+            Text('Getting your location…',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ],
+        ),
+      );
+    }
+
+    if (_message != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.location_off_rounded,
+                  size: 40, color: AppColors.textSecondary),
+              const SizedBox(height: 14),
+              Text(
+                _message!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: AppColors.textSecondary, height: 1.5),
+              ),
+              const SizedBox(height: 18),
+              ElevatedButton(
+                onPressed: _locateAndLoad,
+                child: const Text('Try again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: _locateAndLoad,
+      child: FutureBuilder<List<Hospital>>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary));
+          }
+          if (snap.hasError) {
+            return ListView(children: [
+              Padding(
+                padding: const EdgeInsets.all(28),
+                child: Text('Error: ${snap.error}',
+                    style: const TextStyle(color: Colors.red)),
+              ),
+            ]);
+          }
+          final items = snap.data ?? const [];
+          if (items.isEmpty) {
+            return ListView(children: const [
+              Padding(
+                padding: EdgeInsets.all(40),
+                child: Center(
+                  child: Text('No hospitals found.',
+                      style: TextStyle(color: AppColors.textSecondary)),
+                ),
+              ),
+            ]);
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (_, i) => HospitalCard(hospital: items[i]),
+          );
+        },
       ),
     );
   }

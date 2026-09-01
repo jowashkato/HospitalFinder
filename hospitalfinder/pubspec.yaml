@@ -36,7 +36,7 @@ dependencies:
   # Notifications and timezone
   flutter_local_notifications: ^17.0.0
   timezone: ^0.9.0
-  flutter_timezone: ^1.0.8
+  flutter_timezone: ^4.1.1
 
   # Used by hospital.dart for list equality
   collection: ^1.18.0

@@ -29,7 +29,11 @@ Future<void> main() async {
     tzdata.initializeTimeZones();
     if (!kIsWeb) {
       try {
-        final String localZone = await FlutterTimezone.getLocalTimezone();
+        // flutter_timezone returns a String on v3 and a TimezoneInfo (with an
+        // `identifier` field) on v4 — handle both.
+        final dynamic result = await FlutterTimezone.getLocalTimezone();
+        final String localZone =
+            result is String ? result : (result.identifier as String);
         tz.setLocalLocation(tz.getLocation(localZone));
       } catch (_) {
         // Fall back to the package default (UTC) if the platform lookup fails.
